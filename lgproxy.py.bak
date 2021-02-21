@@ -26,7 +26,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 from logging import FileHandler
 import subprocess
-from urllib.parse import unquote
+from urllib import unquote
 import argparse
 
 from bird import BirdSocket
@@ -47,7 +47,7 @@ app.logger.addHandler(file_handler)
 
 @app.before_request
 def access_log_before(*args, **kwargs):
-    app.logger.info("[%s] request %s, %s", request.remote_addr, request.url, "|".join(["%s:%s"%(k,v) for k,v in list(request.headers.items())]))
+    app.logger.info("[%s] request %s, %s", request.remote_addr, request.url, "|".join(["%s:%s"%(k,v) for k,v in request.headers.items()]))
 
 @app.after_request
 def access_log_after(response, *args, **kwargs):

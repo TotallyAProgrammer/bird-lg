@@ -22,13 +22,13 @@
 
 import base64
 from datetime import datetime
-#import memcache
+import memcache
 import subprocess
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import re
-from urllib.request import urlopen
-from urllib.parse import quote, unquote
+from urllib2 import urlopen
+from urllib import quote, unquote
 import json
 import random
 import argparse
@@ -52,9 +52,9 @@ file_handler = TimedRotatingFileHandler(filename=app.config["LOG_FILE"], when="m
 file_handler.setLevel(getattr(logging, app.config["LOG_LEVEL"].upper()))
 app.logger.addHandler(file_handler)
 
-#memcache_server = app.config.get("MEMCACHE_SERVER", "127.0.0.1:11211")
-#memcache_expiration = int(app.config.get("MEMCACHE_EXPIRATION", "1296000")) # 15 days by default
-#mc = memcache.Client([memcache_server])
+memcache_server = app.config.get("MEMCACHE_SERVER", "127.0.0.1:11211")
+memcache_expiration = int(app.config.get("MEMCACHE_EXPIRATION", "1296000")) # 15 days by default
+mc = memcache.Client([memcache_server])
 
 def get_asn_from_as(n):
     asn_zone = app.config.get("ASN_ZONE", "asn.cymru.com")
@@ -69,7 +69,7 @@ def add_links(text):
     """Browser a string and replace ipv4, ipv6, as number, with a
     whois link """
 
-    if type(text) in [str, str]:
+    if type(text) in [str, unicode]:
         text = text.split("\n")
 
     ret_text = []
@@ -192,12 +192,12 @@ def inject_commands():
 
 @app.context_processor
 def inject_all_host():
-    return dict(all_hosts="+".join(list(app.config["PROXY"].keys())))
+    return dict(all_hosts="+".join(app.config["PROXY"].keys()))
 
 
 @app.route("/")
 def hello():
-    return redirect("/summary/%s/ipv4" % "+".join(list(app.config["PROXY"].keys())))
+    return redirect("/summary/%s/ipv4" % "+".join(app.config["PROXY"].keys()))
 
 
 def error_page(text):
@@ -394,13 +394,12 @@ def get_as_name(_as):
     if not _as.isdigit():
         return _as.strip()
 
-    #name = mc.get(str('lg_%s' % _as))
-    name = False
+    name = mc.get(str('lg_%s' % _as))
     if not name:
         app.logger.info("asn for as %s not found in memcache", _as)
         name = get_asn_from_as(_as)[-1].replace(" ","\r",1)
-        #if name:
-            #mc.set(str("lg_%s" % _as), str(name), memcache_expiration)
+        if name:
+            mc.set(str("lg_%s" % _as), str(name), memcache_expiration)
     return "AS%s | %s" % (_as, name)
 
 
@@ -467,7 +466,7 @@ def show_bgpmap():
                 e.set_label(label)
         return edges[edge_tuple]
 
-    for host, asmaps in data.items():
+    for host, asmaps in data.iteritems():
         if "DOMAIN" in app.config:
             add_node(host, label= "%s\r%s" % (host.upper(), app.config["DOMAIN"].upper()), shape="box", fillcolor="#F5A9A9")
         else:
@@ -482,8 +481,8 @@ def show_bgpmap():
 
     #colors = [ "#009e23", "#1a6ec1" , "#d05701", "#6f879f", "#939a0e", "#0e9a93", "#9a0e85", "#56d8e1" ]
     previous_as = None
-    hosts = list(data.keys())
-    for host, asmaps in data.items():
+    hosts = data.keys()
+    for host, asmaps in data.iteritems():
         first = True
         for asmap in asmaps:
             previous_as = host
@@ -534,7 +533,7 @@ def show_bgpmap():
             first = False
 
     for _as in prepend_as:
-        for n in set([ n for h, d in prepend_as[_as].items() for p, n in d.items() ]):
+        for n in set([ n for h, d in prepend_as[_as].iteritems() for p, n in d.iteritems() ]):
             graph.add_edge(pydot.Edge(*(_as, _as), label=" %dx" % n, color="grey", fontcolor="grey"))
 
     fmt = request.args.get('fmt', 'png')
@@ -583,7 +582,7 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
             if expr2.group(4):
                 peer_protocol_name = expr2.group(4).strip()
             # Check if via line is a internal route
-            for rt_host, rt_ips in app.config["ROUTER_IP"].items():
+            for rt_host, rt_ips in app.config["ROUTER_IP"].iteritems():
                 # Special case for internal routing
                 if peer_ip in rt_ips:
                     path = [rt_host]

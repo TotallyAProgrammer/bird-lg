@@ -23,7 +23,7 @@ After=apache2.service
 
 [Service]
 Type=simple
-User=lookingglass
+User=lg
 ExecStart=/usr/local/lookingglass/lg.py
 Restart=on-failure
 

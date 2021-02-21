@@ -81,7 +81,7 @@ ERROR_CODES = {
     "9002" : "Invalid symbol type",
 }
 
-END_CODES = ERROR_CODES.keys() + SUCCESS_CODES.keys()
+END_CODES = ERROR_CODES.keys() | SUCCESS_CODES.keys()
 
 global bird_sockets
 bird_sockets = {}

@@ -24,7 +24,7 @@ After=bird.service bird6.service
 [Service]
 Type=simple
 ExecStart=/usr/local/lookingglass/lgproxy.py
-User=lgproxy
+User=lg
 Restart=on-failure
 
 [Install]
